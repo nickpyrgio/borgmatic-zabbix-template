@@ -1,0 +1,75 @@
+zabbix_export:
+  version: '6.0'
+  date: '2023-11-14T19:37:43Z'
+  groups:
+    -
+      uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    -
+      uuid: a126bc95caf5495698b748fbb2f93b63
+      template: borgmatic
+      name: borgmatic
+      groups:
+        -
+          name: Templates
+      discovery_rules:
+        -
+          uuid: b244fa7415be405886ffc4b9ec7fbae3
+          name: 'Borgmatic task discovery active'
+          type: TRAP
+          key: borgmatic.discovery.task
+          delay: '0'
+          allowed_hosts: '{HOST.CONN}'
+          lifetime: 10d
+          item_prototypes:
+            -
+              uuid: d65ff0c2b6ad46a8a8e30e9923a22dba
+              name: 'Borgmatic backup task {#BORGMATIC_TASK_NAME} on {#BORGMATIC_SERVER} status'
+              type: TRAP
+              key: 'borgmatic.task.repository.status[{#BORGMATIC_TASK_ZABBIX_KEY}]'
+              delay: '0'
+              allowed_hosts: '{HOST.CONN}'
+              description: |
+                0=Failure
+                1=Success
+              tags:
+                -
+                  tag: Application
+                  value: borgmatic
+              trigger_prototypes:
+                -
+                  uuid: ecfc20eeaee443d2beee075be8e203e0
+                  expression: 'last(/borgmatic/borgmatic.task.repository.status[{#BORGMATIC_TASK_ZABBIX_KEY}])=0'
+                  name: 'Borgmatic task {#BORGMATIC_TASK_NAME} on {#BORGMATIC_SERVER} has failed'
+                  priority: AVERAGE
+                  tags:
+                    -
+                      tag: Application
+                      value: borgmatic
+                -
+                  uuid: a21c802a1882430ba5992fc32eaa914b
+                  expression: 'nodata(/borgmatic/borgmatic.task.repository.status[{#BORGMATIC_TASK_ZABBIX_KEY}],{#BORGMATIC_NODATA_WARNING_THRESHOLD})=1'
+                  name: 'Last succesful status of borgmatic task {#BORGMATIC_TASK_NAME} on {#BORGMATIC_SERVER} was over {#BORGMATIC_NODATA_WARNING_THRESHOLD} ago'
+                  priority: HIGH
+                  tags:
+                    -
+                      tag: Application
+                      value: borgmatic
+          lld_macro_paths:
+            -
+              lld_macro: '{#BORGMATIC_NODATA_WARNING_THRESHOLD}'
+              path: $.zabbix_nodata_warning_threshold
+            -
+              lld_macro: '{#BORGMATIC_SERVER}'
+              path: $.server
+            -
+              lld_macro: '{#BORGMATIC_TASK_NAME}'
+              path: $.name
+            -
+              lld_macro: '{#BORGMATIC_TASK_ZABBIX_KEY}'
+              path: $.zabbix_item_key
+      tags:
+        -
+          tag: Application
+          value: borgmatic
